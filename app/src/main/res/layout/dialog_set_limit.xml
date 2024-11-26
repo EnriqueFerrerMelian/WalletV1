@@ -1,0 +1,50 @@
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <RadioGroup
+        android:id="@+id/radioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Coloca el EditText como un hermano del RadioButton, no dentro de otro LinearLayout -->
+
+
+        <RadioButton
+            android:id="@+id/radioOption2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Diario" />
+
+        <RadioButton
+            android:id="@+id/radioOption3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Semanal" />
+
+        <RadioButton
+            android:id="@+id/radioOption4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Mensual" />
+        <RadioButton
+            android:id="@+id/radioOption1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Con límite personalizado" />
+
+        <EditText
+            android:id="@+id/insertTv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Inserta una cantidad"
+            android:inputType="numberDecimal"
+            android:gravity="center"
+            android:enabled="false" />
+
+    </RadioGroup>
+
+</LinearLayout>
