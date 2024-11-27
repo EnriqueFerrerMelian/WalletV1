@@ -10,21 +10,15 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.room.Room;
 
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.example.walletv1.R;
@@ -32,17 +26,12 @@ import com.example.walletv1.adapters.ItemAdapter;
 import com.example.walletv1.database.AppDatabase;
 import com.example.walletv1.databinding.FragmentWalletBinding;
 import com.example.walletv1.models.Item;
-import com.example.walletv1.ui.activities.MainActivity;
-import com.example.walletv1.utils.DatabaseUtils;
 import com.example.walletv1.utils.DateUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -146,7 +135,11 @@ public class WalletFragment extends Fragment {
                     requireActivity().runOnUiThread(() -> {
                         adapter.setItems(listItems);
                         adapter.notifyDataSetChanged();
-                        calculateLimitResult(listItems);
+                        if (autoCalc) {
+                            autoCalcLimitResult(listItems);
+                        } else {
+                            calculateLimitResult(listItems);
+                        }
                     });
                 } catch (Exception e) {
                     Log.e("AppDatabase", "Error inserting default items", e);
@@ -155,23 +148,67 @@ public class WalletFragment extends Fragment {
         }).start();
     }
 
+    private void autoCalcLimitResult(List<Item> listItems) {
+        int limtMensual =sharedPreferences.getInt("monthly", 0);
+        int resultDays = 0;
+        int resultWeeks = 0;
+        int resultMonth = 0;
+        if (limtMensual==0){
+            showAlertPopup();
+        } else {
+            // si hay limite mensual
+            // se recalcula el gasto diario y semanal
+            int tempSum = listItems.stream().mapToInt(Item::getPrice).sum();
+            resultDays = tempSum/getDaysInCurrentMonth();
+            resultWeeks = tempSum/getWeeksInCurrentMonth();
+            resultMonth = limtMensual -tempSum;
+        }
+        switch (type) {
+            case "daily":
+                binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultDays) / 100))));
+                break;
+            case "weekly":
+                binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultWeeks) / 100))));
+                break;
+            case "monthly":
+                binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultMonth) / 100))));
+        }
+    }
+
     public void calculateLimitResult(List<Item> listItem){
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    int priceLimit = sharedPreferences.getInt(type, 0);
-                    int tempSum = listItem.stream().mapToInt(Item::getPrice).sum();
-                    int color = priceLimit<tempSum? Color.parseColor("#ff2d00"):Color.parseColor("#000000");
-                    requireActivity().runOnUiThread(() -> {
-                        binding.limitDigits.setTextColor(color);
-                        binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (priceLimit-tempSum) / 100))));
-                    });
-                } catch (Exception e) {
-                    Log.e("AppDatabase", "Error inserting default items", e);
-                }
-            }
-        }).start();
+        try {
+            int priceLimit = sharedPreferences.getInt(type, 0);
+            int tempSum = listItem.stream().mapToInt(Item::getPrice).sum();
+            int color = priceLimit<tempSum? Color.parseColor("#ff2d00"):Color.parseColor("#000000");
+            binding.limitDigits.setTextColor(color);
+            binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (priceLimit-tempSum) / 100))));
+        } catch (Exception e) {
+            Log.e("AppDatabase", "Error inserting default items", e);
+        }
+    }
+
+    private void showAlertPopup() {
+        requireActivity().runOnUiThread(() -> {
+            new AlertDialog.Builder(requireContext())
+                    .setTitle("Aviso")
+                    .setMessage("Debes configurar un límite mensual")
+                    .setPositiveButton("Aceptar", (dialog, which) -> {
+                        dialog.dismiss();
+                    })
+                    .show();
+        });
+    }
+
+    public int getDaysInCurrentMonth() {
+        Calendar calendar = Calendar.getInstance();
+        int daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+        return daysInMonth;
+    }
+
+    public int getWeeksInCurrentMonth() {
+        Calendar calendar = Calendar.getInstance();
+        int weeksInMonth = calendar.getActualMaximum(Calendar.WEEK_OF_MONTH);
+        return weeksInMonth;
     }
 
     private void showAddItem() {
@@ -294,7 +331,11 @@ public class WalletFragment extends Fragment {
                             binding.tvLimit.setText(selectedRadioId.getText().toString());
                             adapter.setItems(listItems);
                             adapter.notifyDataSetChanged();
-                            calculateLimitResult(listItems);
+                            if (autoCalc) {
+                                autoCalcLimitResult(listItems);
+                            } else {
+                                calculateLimitResult(listItems);
+                            }
                         });
                     } catch (Exception e) {
                         Log.e("AppDatabase", "Error inserting default categories", e);
