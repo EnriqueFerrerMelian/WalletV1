@@ -49,12 +49,10 @@ public class WalletFragment extends Fragment {
     String begining = "", end = "";
     List<Item> listItems = new ArrayList<>();
     Boolean autoCalc;
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
@@ -80,7 +78,6 @@ public class WalletFragment extends Fragment {
         db = AppDatabase.getInstance(requireContext());
         //DatabaseUtils.deleteAllItems(requireContext()); // debugging
 
-
         if (getArguments() != null) {
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
@@ -97,14 +94,15 @@ public class WalletFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        System.out.println(type);
         showItemlistByTypeSelected(type);
-
         binding.rvItems.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new ItemAdapter();
         adapter.setItems(listItems);
         binding.rvItems.setAdapter(adapter);
 
         binding.limitDigits.setText(String.valueOf(roundToTwoDecimals(((double) sharedPreferences.getInt(type, 0) / 100))));
+        System.out.println("mostrando: " + type);
         binding.limitMarker.setOnClickListener(v -> showSetLimit());
         binding.floatingActionButton.setOnClickListener(v -> showAddItem());
     }
@@ -126,6 +124,10 @@ public class WalletFragment extends Fragment {
                 end = DateUtils.formatDate(DateUtils.getEndOfMonth());
                 binding.tvLimit.setText("Mensual");
                 break;
+            case "optional":
+                begining = DateUtils.formatDate(DateUtils.getStartOfDay());
+                end = DateUtils.formatDate(DateUtils.getEndOfDay());
+                binding.tvLimit.setText("Opcional");
         }
         new Thread(new Runnable() {
             @Override
@@ -149,38 +151,47 @@ public class WalletFragment extends Fragment {
     }
 
     private void autoCalcLimitResult(List<Item> listItems) {
+        System.out.println("autoCalcLimitResult");
         int limtMensual =sharedPreferences.getInt("monthly", 0);
-        int resultDays = 0;
-        int resultWeeks = 0;
-        int resultMonth = 0;
+        System.out.println("limtMensual: " + limtMensual);
+        int resultDays,resultWeeks,resultMonth;
         if (limtMensual==0){
             showAlertPopup();
         } else {
-            // si hay limite mensual
-            // se recalcula el gasto diario y semanal
             int tempSum = listItems.stream().mapToInt(Item::getPrice).sum();
+            binding.limitTotalDigits.setText(String.valueOf(roundToTwoDecimals(((double) (tempSum) / 100))));
+            System.out.println("tempSum: " + tempSum);
             resultDays = tempSum/getDaysInCurrentMonth();
             resultWeeks = tempSum/getWeeksInCurrentMonth();
-            resultMonth = limtMensual -tempSum;
+            resultMonth = limtMensual-tempSum;
+            System.out.println("resultMonth: " + resultMonth);
+            switch (type) {
+                case "daily":
+                    binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultDays) / 100))));
+                    break;
+                case "weekly":
+                    binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultWeeks) / 100))));
+                    break;
+                case "monthly":
+                    binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultMonth) / 100))));
+                    System.out.println("resultMonth: " + resultMonth);
+                    break;
+                case "optional":
+                    binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultDays) / 100))));
+            }
         }
-        switch (type) {
-            case "daily":
-                binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultDays) / 100))));
-                break;
-            case "weekly":
-                binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultWeeks) / 100))));
-                break;
-            case "monthly":
-                binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultMonth) / 100))));
-        }
+        System.out.println(binding.limitSumDigits.getText().toString());
     }
 
     public void calculateLimitResult(List<Item> listItem){
+        System.out.println("calculateLimitResult");
         try {
             int priceLimit = sharedPreferences.getInt(type, 0);
             int tempSum = listItem.stream().mapToInt(Item::getPrice).sum();
+            binding.limitTotalDigits.setText(String.valueOf(roundToTwoDecimals(((double) (tempSum) / 100))));
             int color = priceLimit<tempSum? Color.parseColor("#ff2d00"):Color.parseColor("#000000");
             binding.limitDigits.setTextColor(color);
+            binding.limitDigits.setText(String.valueOf(roundToTwoDecimals(((double) (priceLimit) / 100))));
             binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (priceLimit-tempSum) / 100))));
         } catch (Exception e) {
             Log.e("AppDatabase", "Error inserting default items", e);
@@ -188,6 +199,7 @@ public class WalletFragment extends Fragment {
     }
 
     private void showAlertPopup() {
+        System.out.println("showAlertPopup");
         requireActivity().runOnUiThread(() -> {
             new AlertDialog.Builder(requireContext())
                     .setTitle("Aviso")
@@ -212,6 +224,7 @@ public class WalletFragment extends Fragment {
     }
 
     private void showAddItem() {
+        System.out.println("showAddItem");
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_add_item, null);
         EditText itemName = dialogView.findViewById(R.id.etItemName);
         EditText itemPrice = dialogView.findViewById(R.id.etItemPrice);
@@ -231,6 +244,7 @@ public class WalletFragment extends Fragment {
     }
 
     private void handleAddItem(EditText itemName, EditText itemPrice) {
+        System.out.println("handleAddItem");
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -252,6 +266,7 @@ public class WalletFragment extends Fragment {
     }
 
     public String obtainTodaysDate(){
+        System.out.println("obtainTodaysDate");
         Calendar calendar = Calendar.getInstance();
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy");
@@ -259,6 +274,7 @@ public class WalletFragment extends Fragment {
     }
 
     private void showSetLimit() {
+        System.out.println("showSetLimit");
         View dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_set_limit, null);
         EditText insertTv = dialogView.findViewById(R.id.insertTv);
         insertTv.setAlpha(0.5f);
@@ -293,8 +309,10 @@ public class WalletFragment extends Fragment {
     }
 
     private void handleSetLimit(EditText insertTv, RadioButton selectedRadioId) {
+        System.out.println("handleSetLimit");
         if (insertTv != null && !insertTv.getText().toString().isEmpty()) {
             binding.limitDigits.setText(String.valueOf(Double.parseDouble(insertTv.getText().toString())));
+            binding.tvLimit.setText(selectedRadioId.getText().toString());
             safeTypeOnSharedPreferences("optional", Double.parseDouble(insertTv.getText().toString()));
         }
         if (selectedRadioId.isChecked()) {
@@ -303,18 +321,21 @@ public class WalletFragment extends Fragment {
                     begining = DateUtils.formatDate(DateUtils.getStartOfDay());
                     end = DateUtils.formatDate(DateUtils.getEndOfDay());
                     type = "daily";
+                    binding.tvLimit.setText(selectedRadioId.getText().toString());
                     safeTypeOnSharedPreferences("daily", 0);
                     break;
                 case "Semanal":
                     begining = DateUtils.formatDate(DateUtils.getStartOfWeek());
                     end = DateUtils.formatDate(DateUtils.getEndOfWeek());
                     type = "weekly";
+                    binding.tvLimit.setText(selectedRadioId.getText().toString());
                     safeTypeOnSharedPreferences("weekly", 0);
                     break;
                 case "Mensual":
                     begining = DateUtils.formatDate(DateUtils.getStartOfMonth());
                     end = DateUtils.formatDate(DateUtils.getEndOfMonth());
                     type = "monthly";
+                    binding.tvLimit.setText(selectedRadioId.getText().toString());
                     safeTypeOnSharedPreferences("monthly", 0);
                     break;
             }
@@ -328,7 +349,6 @@ public class WalletFragment extends Fragment {
                     try {
                         listItems = db.itemDao().getItemsByDate(begining, end);
                         requireActivity().runOnUiThread(() -> {
-                            binding.tvLimit.setText(selectedRadioId.getText().toString());
                             adapter.setItems(listItems);
                             adapter.notifyDataSetChanged();
                             if (autoCalc) {
@@ -342,15 +362,18 @@ public class WalletFragment extends Fragment {
                     }
                 }
         }).start();
+        System.out.println(binding.limitSumDigits.getText().toString());
     }
 
     private void safeTypeOnSharedPreferences(String limitType, double limit) {
-        int transformedLimit = (int)limit * 100;
+        System.out.println("safeTypeOnSharedPreferences");
+        int transformedLimit = (int)(limit * 100);
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString("displayLimit", limitType);
-        editor.putInt("limitType", transformedLimit);
+        editor.putInt("optional", transformedLimit);
         editor.apply();
+        System.out.println(binding.limitSumDigits.getText().toString());
     }
 
     private static double roundToTwoDecimals(double value) {
