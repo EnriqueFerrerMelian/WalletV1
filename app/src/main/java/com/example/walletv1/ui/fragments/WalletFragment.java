@@ -48,6 +48,7 @@ public class WalletFragment extends Fragment {
     private AppDatabase db;
     String begining = "", end = "";
     List<Item> listItems = new ArrayList<>();
+    List<Item> listItemsByMonth = new ArrayList<>();
     Boolean autoCalc;
 
     private static final String ARG_PARAM1 = "param1";
@@ -150,37 +151,40 @@ public class WalletFragment extends Fragment {
         }).start();
     }
 
-    private void autoCalcLimitResult(List<Item> listItems) {
+    private void autoCalcLimitResult(List<Item> itemList) {
         System.out.println("autoCalcLimitResult");
-        int limtMensual =sharedPreferences.getInt("monthly", 0);
-        System.out.println("limtMensual: " + limtMensual);
-        int resultDays,resultWeeks,resultMonth;
-        if (limtMensual==0){
+        int limtMonthly =sharedPreferences.getInt("monthly", 0);
+        int limtWeekly =sharedPreferences.getInt("weekly", 0);
+        int limtDaily =sharedPreferences.getInt("daily", 0);
+        if (limtMonthly==0){
             showAlertPopup();
         } else {
-            int tempSum = listItems.stream().mapToInt(Item::getPrice).sum();
+            int resultDays,resultWeeks,resultMonth;
+            int tempSum = itemList.stream().mapToInt(Item::getPrice).sum();
+            int color = 0;
             binding.limitTotalDigits.setText(String.valueOf(roundToTwoDecimals(((double) (tempSum) / 100))));
-            System.out.println("tempSum: " + tempSum);
-            resultDays = tempSum/getDaysInCurrentMonth();
-            resultWeeks = tempSum/getWeeksInCurrentMonth();
-            resultMonth = limtMensual-tempSum;
-            System.out.println("resultMonth: " + resultMonth);
+            resultDays = (limtMonthly/getDaysInCurrentMonth())-tempSum;
+            resultWeeks = (limtMonthly/getWeeksInCurrentMonth())-tempSum; // gastos mensuales / 4
+            System.out.println(getWeeksInCurrentMonth());
+            resultMonth = limtMonthly-tempSum;
             switch (type) {
                 case "daily":
                     binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultDays) / 100))));
+                    color = resultDays<0? Color.parseColor("#ff2d00"):Color.parseColor("#000000");
                     break;
                 case "weekly":
                     binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultWeeks) / 100))));
+                    color = resultWeeks<0? Color.parseColor("#ff2d00"):Color.parseColor("#000000");
                     break;
                 case "monthly":
                     binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultMonth) / 100))));
-                    System.out.println("resultMonth: " + resultMonth);
+                    color = resultMonth<0? Color.parseColor("#ff2d00"):Color.parseColor("#000000");
                     break;
                 case "optional":
                     binding.limitSumDigits.setText(String.valueOf(roundToTwoDecimals(((double) (resultDays) / 100))));
             }
+            binding.limitDigits.setTextColor(color);
         }
-        System.out.println(binding.limitSumDigits.getText().toString());
     }
 
     public void calculateLimitResult(List<Item> listItem){

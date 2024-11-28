@@ -20,6 +20,8 @@ import com.example.walletv1.R;
 import com.example.walletv1.databinding.FragmentSettingsBinding;
 import com.example.walletv1.databinding.FragmentWalletBinding;
 
+import java.util.Calendar;
+
 
 public class SettingsFragment extends Fragment {
     private SharedPreferences sharedPreferences;
@@ -142,11 +144,11 @@ public class SettingsFragment extends Fragment {
             editor.putInt("monthly", (int) monthlyLimit*100);
             binding.monthlyQuantity.setText(String.valueOf(roundToTwoDecimals(monthlyLimit)));
         } else if (weeklyLimit > 0) {
-            monthlyLimit = weeklyLimit * 4;
+            monthlyLimit = weeklyLimit * getWeeksInCurrentMonth();
             binding.monthlyQuantity.setText(String.valueOf(roundToTwoDecimals(monthlyLimit)));
             editor.putInt("monthly", (int) monthlyLimit*100);
         } else if (dailyLimit > 0) {
-            monthlyLimit = dailyLimit * 30;
+            monthlyLimit = dailyLimit * getDaysInCurrentMonth();
             binding.monthlyQuantity.setText(String.valueOf(roundToTwoDecimals(monthlyLimit)));
             editor.putInt("monthly", (int) monthlyLimit*100);
         }
@@ -159,7 +161,7 @@ public class SettingsFragment extends Fragment {
             binding.weeklyQuantity.setText(String.valueOf(roundToTwoDecimals(weeklyLimit)));
             editor.putInt("weekly", (int)(weeklyLimit*100));
         } else if (monthlyLimit > 0) {
-            weeklyLimit = monthlyLimit / 4;
+            weeklyLimit = monthlyLimit / getWeeksInCurrentMonth();
             binding.weeklyQuantity.setText(String.valueOf(roundToTwoDecimals(weeklyLimit)));
             editor.putInt("weekly", (int)(weeklyLimit*100));
         }
@@ -169,6 +171,10 @@ public class SettingsFragment extends Fragment {
             binding.dailyQuantity.setText(String.valueOf(roundToTwoDecimals(dailyLimit)));
         } else if (weeklyLimit > 0) {
             dailyLimit = weeklyLimit / 7;
+            binding.dailyQuantity.setText(String.valueOf(roundToTwoDecimals(dailyLimit)));
+            editor.putInt("daily",(int)(dailyLimit*100));
+        } else if (monthlyLimit > 0) {
+            dailyLimit = monthlyLimit / getDaysInCurrentMonth();
             binding.dailyQuantity.setText(String.valueOf(roundToTwoDecimals(dailyLimit)));
             editor.putInt("daily",(int)(dailyLimit*100));
         }
@@ -197,5 +203,17 @@ public class SettingsFragment extends Fragment {
         SharedPreferences sharedPreferences = requireContext().getSharedPreferences(PREFS_NAME, MODE_PRIVATE); SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear(); // Esto elimina todos los valores almacenados en "Settings"
         editor.apply();
+    }
+
+    public int getDaysInCurrentMonth() {
+        Calendar calendar = Calendar.getInstance();
+        int daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH);
+        return daysInMonth;
+    }
+
+    public int getWeeksInCurrentMonth() {
+        Calendar calendar = Calendar.getInstance();
+        int weeksInMonth = calendar.getActualMaximum(Calendar.WEEK_OF_MONTH);
+        return weeksInMonth;
     }
 }
